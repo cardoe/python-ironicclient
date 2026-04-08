@@ -524,3 +524,39 @@ class HashColumn(columns.FormattableColumn):
     # base returns Sequence; we return str | None
     def human_readable(self) -> str | None:  # type: ignore[override]
         return format_hash(self._value)
+
+
+def check_api_version_support(
+    current_version: str | None,
+    required_version: str,
+    feature_name: str,
+) -> None:
+    """Check if the current API version supports a specific feature.
+
+    :param current_version: Current API version being used (e.g. "1.112")
+    :param required_version: Minimum API version required (e.g. "1.112")
+    :param feature_name: Name of feature for error messages
+    :raises: UnsupportedVersion if the current version doesn't support the feature
+    """
+    # Import here to avoid circular imports
+    from ironicclient.common.http import _Version
+    from ironicclient.common.apiclient.exceptions import UnsupportedVersion
+
+    if current_version is None:
+        # If no version specified, we can't check, so let the server handle it
+        return
+
+    try:
+        current = _Version(current_version)
+        required = _Version(required_version)
+
+        if current < required:
+            raise UnsupportedVersion(
+                _("%(feature)s requires API version %(required)s or later. "
+                  "Current version is %(current)s.")
+                % {'feature': feature_name,
+                   'required': required_version,
+                   'current': current_version})
+    except ValueError:
+        # Invalid version format - let the server handle it
+        pass
