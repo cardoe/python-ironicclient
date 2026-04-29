@@ -25,7 +25,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Any, Callable, Generator, Iterator, Protocol
+from typing import Any, Callable, Generator, Iterator, Literal, Protocol, TypedDict
 
 from cliff import columns
 from oslo_utils import strutils
@@ -33,6 +33,24 @@ import yaml
 
 from ironicclient.common.i18n import _
 from ironicclient import exc
+
+
+SortDir = Literal['asc', 'desc']
+HTTPMethod = Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+
+
+class _PatchOperationRequired(TypedDict):
+    op: Literal['add', 'replace', 'remove']
+    path: str
+
+
+class PatchOperation(_PatchOperationRequired, total=False):
+    """A single RFC 6902 JSON Patch operation."""
+
+    value: Any
+
+
+Patch = list[PatchOperation]
 
 
 class ListCommandArgs(Protocol):
@@ -43,7 +61,7 @@ class ListCommandArgs(Protocol):
     marker: str | None
     limit: int | None
     sort_key: str | None
-    sort_dir: str | None
+    sort_dir: SortDir | None
     detail: bool
     fields: list[list[str]] | None
 
@@ -105,10 +123,10 @@ def args_array_to_dict(
 
 
 def args_array_to_patch(
-    op: str,
+    op: Literal['add', 'replace', 'remove'],
     attributes: list[str],
-) -> list[dict[str, Any]]:
-    patch = []
+) -> Patch:
+    patch: Patch = []
     for attr in attributes:
         # Sanitize
         if not attr.startswith('/'):
@@ -205,7 +223,7 @@ def common_filters(
     marker: str | None = None,
     limit: int | None = None,
     sort_key: str | None = None,
-    sort_dir: str | None = None,
+    sort_dir: SortDir | None = None,
     fields: list[str] | None = None,
     detail: bool = False,
     project: str | None = None,
