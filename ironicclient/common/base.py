@@ -27,6 +27,7 @@ from urllib import parse as urlparse
 from ironicclient.common.apiclient import base
 from ironicclient.common.http import SessionClient
 from ironicclient import exc
+from ironicclient.common.utils import HTTPMethod, Patch
 
 
 class Resource(base.Resource):
@@ -374,8 +375,8 @@ class Manager(Generic[ResourceT], metaclass=abc.ABCMeta):
     def _update(
         self,
         resource_id: str,
-        patch: list[dict[str, Any]] | None,
-        method: str = 'PATCH',
+        patch: Patch | None,
+        method: HTTPMethod = 'PATCH',
         os_ironic_api_version: str | None = None,
         global_request_id: str | None = None,
         params: dict[str, Any] | None = None,
