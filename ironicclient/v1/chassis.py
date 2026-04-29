@@ -21,6 +21,7 @@ from typing import Any
 from ironicclient.common import base
 from ironicclient.common.i18n import _
 from ironicclient.common import utils
+from ironicclient.common.utils import Patch, SortDir
 from ironicclient import exc
 
 
@@ -65,7 +66,7 @@ class ChassisManager(base.CreateManager[Chassis]):
     def update(
         self,
         chassis_id: str,
-        patch: list[dict[str, Any]],
+        patch: Patch,
         os_ironic_api_version: str | None = None,
         global_request_id: str | None = None,
     ) -> base.Resource | None:
@@ -82,7 +83,7 @@ class ChassisManager(base.CreateManager[Chassis]):
         marker: str | None = None,
         limit: int | None = None,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         detail: bool = False,
         fields: list[str] | None = None,
         associated: bool | str | None = None,
@@ -186,7 +187,7 @@ class ChassisManager(base.CreateManager[Chassis]):
         marker: str | None = None,
         limit: int | None = None,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         detail: bool = False,
         fields: list[str] | None = None,
         os_ironic_api_version: str | None = None,

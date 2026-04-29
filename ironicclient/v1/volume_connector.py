@@ -19,6 +19,7 @@ from typing import Any
 from ironicclient.common import base
 from ironicclient.common.i18n import _
 from ironicclient.common import utils
+from ironicclient.common.utils import Patch, SortDir
 from ironicclient import exc
 
 
@@ -63,7 +64,7 @@ class VolumeConnectorManager(base.CreateManager[VolumeConnector]):
     def update(
         self,
         volume_connector_id: str,
-        patch: list[dict[str, Any]],
+        patch: Patch,
         os_ironic_api_version: str | None = None,
         global_request_id: str | None = None,
     ) -> base.Resource | None:
@@ -80,7 +81,7 @@ class VolumeConnectorManager(base.CreateManager[VolumeConnector]):
         limit: int | None = None,
         marker: str | None = None,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         detail: bool = False,
         fields: list[str] | None = None,
         os_ironic_api_version: str | None = None,

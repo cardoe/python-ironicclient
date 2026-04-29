@@ -15,6 +15,7 @@ from __future__ import annotations
 from ironicclient.common import base
 from ironicclient.common.i18n import _
 from ironicclient.common import utils
+from ironicclient.common.utils import SortDir
 from ironicclient import exc
 
 
@@ -46,7 +47,7 @@ class ConductorManager(base.Manager[Conductor]):
         marker: str | None = None,
         limit: int | None = None,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         fields: list[str] | None = None,
         detail: bool = False,
         os_ironic_api_version: str | None = None,

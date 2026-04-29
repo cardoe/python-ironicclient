@@ -19,6 +19,7 @@ from typing import Any
 from ironicclient.common import base
 from ironicclient.common.i18n import _
 from ironicclient.common import utils
+from ironicclient.common.utils import Patch, SortDir
 from ironicclient import exc
 
 
@@ -127,7 +128,7 @@ class PortgroupManager(base.CreateManager[Portgroup]):
     def update(
         self,
         portgroup_id: str,
-        patch: list[dict[str, Any]],
+        patch: Patch,
         os_ironic_api_version: str | None = None,
         global_request_id: str | None = None,
     ) -> Portgroup | None:
@@ -153,7 +154,7 @@ class PortgroupManager(base.CreateManager[Portgroup]):
         marker: str | None = None,
         limit: int | None = None,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         detail: bool = False,
         fields: list[str] | None = None,
         os_ironic_api_version: str | None = None,
@@ -235,7 +236,7 @@ class PortgroupManager(base.CreateManager[Portgroup]):
         limit: int | None = None,
         marker: str | None = None,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         detail: bool = False,
         fields: list[str] | None = None,
         shards: list[str] | None = None,
