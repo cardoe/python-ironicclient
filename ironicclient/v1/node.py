@@ -17,14 +17,16 @@ from __future__ import annotations
 from collections.abc import Callable
 import logging
 import os
-from typing import Any, cast
+from typing import Any, cast, Literal
 
 from oslo_utils import strutils
 
 from ironicclient.common import base
 from ironicclient.common.i18n import _
 from ironicclient.common import utils
+from ironicclient.common.utils import HTTPMethod, Patch, SortDir
 from ironicclient import exc
+from ironicclient.v1 import port as port_module
 from ironicclient.v1 import volume_connector
 from ironicclient.v1 import volume_target
 
@@ -71,12 +73,12 @@ class NodeManager(base.CreateManager[Node]):
         marker: str | None = None,
         limit: int | None = None,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         detail: bool = False,
         fields: list[str] | None = None,
         os_ironic_api_version: str | None = None,
         global_request_id: str | None = None,
-    ) -> list[Node]:
+    ) -> list[port_module.Port]:
         """List all the ports for a given node.
 
         :param node_id: Name or UUID of the node.
@@ -132,12 +134,14 @@ class NodeManager(base.CreateManager[Node]):
         if limit is None:
             return self._list(
                 self._path(path), "ports",
+                obj_class=port_module.Port,
                 os_ironic_api_version=os_ironic_api_version,
                 global_request_id=global_request_id,
             )
         else:
             return self._list_pagination(
                 self._path(path), "ports", limit=limit,
+                obj_class=port_module.Port,
                 os_ironic_api_version=os_ironic_api_version,
                 global_request_id=global_request_id,
             )
@@ -148,7 +152,7 @@ class NodeManager(base.CreateManager[Node]):
         marker: str | None = None,
         limit: int | None = None,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         detail: bool = False,
         fields: list[str] | None = None,
         os_ironic_api_version: str | None = None,
@@ -227,7 +231,7 @@ class NodeManager(base.CreateManager[Node]):
         marker: str | None = None,
         limit: int | None = None,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         detail: bool = False,
         fields: list[str] | None = None,
         os_ironic_api_version: str | None = None,
@@ -376,8 +380,8 @@ class NodeManager(base.CreateManager[Node]):
     def update(
         self,
         node_id: str,
-        patch: list[dict[str, Any]] | dict[str, Any] | None,
-        http_method: str = 'PATCH',
+        patch: Patch | dict[str, Any] | None,
+        http_method: HTTPMethod = 'PATCH',
         os_ironic_api_version: str | None = None,
         reset_interfaces: bool | None = None,
         global_request_id: str | None = None,
@@ -399,7 +403,7 @@ class NodeManager(base.CreateManager[Node]):
         node_id: str,
         method: str,
         args: dict[str, Any] | None = None,
-        http_method: str | None = None,
+        http_method: HTTPMethod | None = None,
         os_ironic_api_version: str | None = None,
         global_request_id: str | None = None,
     ) -> Node | None:
@@ -421,7 +425,7 @@ class NodeManager(base.CreateManager[Node]):
         if http_method is None:
             http_method = 'POST'
 
-        http_method = http_method.upper()
+        http_method = cast(HTTPMethod, http_method.upper())
 
         path = "%s/vendor_passthru/%s" % (node_id, method)
         if http_method in ('POST', 'PUT', 'PATCH'):
@@ -569,7 +573,7 @@ class NodeManager(base.CreateManager[Node]):
     def set_power_state(
         self,
         node_id: str,
-        state: str,
+        state: Literal['on', 'off', 'reboot'],
         soft: bool = False,
         timeout: int | None = None,
         os_ironic_api_version: str | None = None,
@@ -618,7 +622,7 @@ class NodeManager(base.CreateManager[Node]):
     def set_boot_mode(
         self,
         node_id: str,
-        state: str,
+        state: Literal['uefi', 'bios'],
         os_ironic_api_version: str | None = None,
         global_request_id: str | None = None,
     ) -> Node | None:
@@ -1338,7 +1342,7 @@ class NodeManager(base.CreateManager[Node]):
         limit: int | None = None,
         detail: bool = False,
         sort_key: str | None = None,
-        sort_dir: str | None = None,
+        sort_dir: SortDir | None = None,
         fields: list[str] | None = None,
         provision_state: str | None = None,
         driver: str | None = None,
