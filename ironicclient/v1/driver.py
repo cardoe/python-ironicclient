@@ -20,6 +20,7 @@ from typing import Any, cast
 from ironicclient.common import base
 from ironicclient.common.i18n import _
 from ironicclient import exc
+from ironicclient.common.utils import HTTPMethod, Patch
 
 
 class Driver(base.Resource):
@@ -48,8 +49,8 @@ class DriverManager(base.Manager[Driver]):
     def update(
         self,
         driver_name: str,
-        patch: list[dict[str, Any]],
-        http_method: str = 'PATCH',
+        patch: Patch,
+        http_method: HTTPMethod = 'PATCH',
         os_ironic_api_version: str | None = None,
         global_request_id: str | None = None,
     ) -> base.Resource | None:
@@ -121,7 +122,7 @@ class DriverManager(base.Manager[Driver]):
         driver_name: str,
         method: str,
         args: dict[str, Any] | None = None,
-        http_method: str | None = None,
+        http_method: HTTPMethod | None = None,
         os_ironic_api_version: str | None = None,
         global_request_id: str | None = None,
     ) -> base.Resource | None:
@@ -143,7 +144,7 @@ class DriverManager(base.Manager[Driver]):
         if http_method is None:
             http_method = 'POST'
 
-        http_method = http_method.upper()
+        http_method = cast(HTTPMethod, http_method.upper())
 
         path = "%s/vendor_passthru/%s" % (driver_name, method)
         if http_method in ('POST', 'PUT', 'PATCH'):
