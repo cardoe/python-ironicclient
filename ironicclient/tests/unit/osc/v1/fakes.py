@@ -363,5 +363,14 @@ class TestBaremetal(utils.TestCommand):
 
 class FakeBaremetalResource(fakes.FakeResource):
 
+    def __init__(
+            self,
+            manager: object | None,
+            info: dict[str, object],
+            loaded: bool = False,
+    ) -> None:
+        super().__init__(manager, info, loaded)
+        self._body = info  # mirrors openstacksdk Resource._body for SDK migration
+
     def get_keys(self) -> dict[str, str]:
         return {'property': 'value'}
