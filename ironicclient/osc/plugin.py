@@ -21,15 +21,16 @@ from __future__ import annotations
 import argparse
 import logging
 
+import openstack.connection
+from openstack.baremetal.v1 import _proxy as baremetal_proxy
 from osc_lib import clientmanager
 from osc_lib import utils
 
 from ironicclient.common import http
-from ironicclient.v1 import client as v1_client
+from ironicclient.osc import _sdk_compat
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
-CLIENT_CLASS: str = 'ironicclient.v1.client.Client'
 API_VERSION_OPTION: str = 'os_baremetal_api_version'
 API_NAME: str = 'baremetal'
 # NOTE(TheJulia) Latest known version tracking has been moved
@@ -38,12 +39,12 @@ API_NAME: str = 'baremetal'
 LAST_KNOWN_API_VERSION: int = http.LAST_KNOWN_API_VERSION
 LATEST_VERSION: str = http.LATEST_VERSION
 
-
+# API_VERSIONS is kept for build_option_parser's choices list.
 API_VERSIONS: dict[str, str] = {
-    '1.%d' % i: CLIENT_CLASS
+    '1.%d' % i: 'openstack.baremetal.v1._proxy.Proxy'
     for i in range(1, LAST_KNOWN_API_VERSION + 1)
 }
-API_VERSIONS['1'] = CLIENT_CLASS
+API_VERSIONS['1'] = 'openstack.baremetal.v1._proxy.Proxy'
 # NOTE(dtantsur): flag to indicate that the requested version was "latest".
 # Due to how OSC works we cannot just add "latest" to the list of supported
 # versions - it breaks the major version detection.
@@ -52,16 +53,10 @@ OS_BAREMETAL_API_LATEST: bool = True
 
 def make_client(
     instance: clientmanager.ClientManager,
-) -> v1_client.Client:
-    """Returns a baremetal service client."""
+) -> baremetal_proxy.Proxy:
+    """Returns a baremetal service client (openstacksdk proxy)."""
     requested_api_version: str = instance._api_version[API_NAME]
 
-    baremetal_client_class: type[v1_client.Client] = (
-        utils.get_client_class(
-            API_NAME,
-            requested_api_version,
-            API_VERSIONS))
-    LOG.debug('Instantiating baremetal client: %s', baremetal_client_class)
     LOG.debug('Baremetal API version: %s',
               requested_api_version if not OS_BAREMETAL_API_LATEST
               else "latest")
@@ -70,30 +65,31 @@ def make_client(
         # NOTE(dtantsur): '1' means 'the latest v1 API version'. Since we don't
         # have other major versions, it's identical to 'latest'.
         requested_api_version = LATEST_VERSION
-        allow_api_version_downgrade: bool = True
-    else:
-        allow_api_version_downgrade = OS_BAREMETAL_API_LATEST
 
-    result: v1_client.Client = baremetal_client_class(
-        os_ironic_api_version=requested_api_version,
-        # NOTE(dtantsur): enable re-negotiation of the latest version, if CLI
-        # latest is too high for the server we're talking to.
-        allow_api_version_downgrade=allow_api_version_downgrade,
-        session=instance.session,
+    # Reuse the keystoneauth session that osc-lib has already configured.
+    conn = openstack.connection.Connection(session=instance.session)
+    proxy: baremetal_proxy.Proxy = conn.baremetal
+
+    # Apply service endpoint override when the user/catalog provides one.
+    endpoint = instance.get_endpoint_for_service_type(
+        API_NAME,
+        interface=instance.interface,
         # TODO(anandkaranubc): _region_name is a private attr on ClientManager;
         # osc-lib should expose this publicly. See also:
         # https://bugs.launchpad.net/python-ironicclient/+bug/2146739
         region_name=instance._region_name,  # type: ignore[attr-defined]
-        # NOTE(vdrok): This will be set as endpoint_override, and the Client
-        # class will be able to do the version stripping if needed
-        endpoint_override=instance.get_endpoint_for_service_type(
-            API_NAME, interface=instance.interface,
-            # TODO(anandkaranubc): same _region_name private
-            # attr access as above
-            region_name=instance._region_name  # type: ignore[attr-defined]
-        )
     )
-    return result
+    if endpoint:
+        proxy.endpoint_override = endpoint
+
+    # Honour --os-baremetal-api-version / OS_BAREMETAL_API_VERSION.
+    proxy.default_microversion = requested_api_version
+
+    # Attach backward-compat managers so existing command modules continue to
+    # work unchanged during the incremental migration to native SDK calls.
+    _sdk_compat.attach_compat_managers(proxy)
+
+    return proxy
 
 
 def build_option_parser(

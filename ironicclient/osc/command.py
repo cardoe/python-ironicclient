@@ -14,7 +14,7 @@
 
 These subclass osc-lib's command classes and annotate ``app`` so that
 ``self.app.client_manager.baremetal`` is statically known to be
-:class:`ironicclient.v1.client.Client`, removing the need for
+:class:`openstack.baremetal.v1._proxy.Proxy`, removing the need for
 ``# type: ignore[attr-defined]`` throughout the command implementations.
 
 See https://review.opendev.org/c/openstack/python-openstackclient/+/970681
@@ -23,23 +23,18 @@ for the equivalent pattern in python-openstackclient.
 
 from __future__ import annotations
 
-from typing import Any
-
 from cliff import lister
 from cliff import show
 from osc_lib import clientmanager
 from osc_lib.command import command
+from openstack.baremetal.v1 import _proxy as baremetal_proxy
 from osc_lib import shell
 
 
 class _ClientManager(clientmanager.ClientManager):
     # NOTE(anandkaranubc): baremetal is injected dynamically by the plugin
-    # system (via setattr in osc-lib's get_plugin_modules). Typed as
-    # Any because osc-lib's utility functions (e.g. get_item_properties)
-    # have narrow type signatures that don't accept Resource objects.
-    # Can be narrowed to v1.client.Client once those callers are
-    # updated.
-    baremetal: Any
+    # system (via setattr in osc-lib's get_plugin_modules).
+    baremetal: baremetal_proxy.Proxy
 
 
 class _App(shell.OpenStackShell):

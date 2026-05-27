@@ -17,68 +17,56 @@ from unittest import mock
 
 import testtools
 
+import openstack.connection
 from ironicclient.osc import plugin
 from ironicclient.tests.unit.osc import fakes
-from ironicclient.v1 import client
 
 
 class MakeClientTest(testtools.TestCase):
 
     @mock.patch.object(plugin, 'OS_BAREMETAL_API_LATEST', new=False)
-    @mock.patch.object(client, 'Client', autospec=True)
+    @mock.patch('openstack.connection.Connection', autospec=True)
     def test_make_client_explicit_version(
-            self, mock_client: mock.Mock) -> None:
+            self, mock_conn: mock.Mock) -> None:
         instance = fakes.FakeClientManager()
         instance.get_endpoint_for_service_type = mock.Mock(
             return_value='endpoint')
-        plugin.make_client(instance)
-        mock_client.assert_called_once_with(
-            os_ironic_api_version=fakes.API_VERSION,
-            allow_api_version_downgrade=False,
-            session=instance.session,
-            region_name=instance._region_name,
-            endpoint_override='endpoint')
+        result = plugin.make_client(instance)
+        mock_conn.assert_called_once_with(session=instance.session)
+        proxy = mock_conn.return_value.baremetal
+        self.assertEqual(proxy.endpoint_override, 'endpoint')
+        self.assertEqual(proxy.default_microversion, fakes.API_VERSION)
+        self.assertIs(result, proxy)
         instance.get_endpoint_for_service_type.assert_called_once_with(
             'baremetal', region_name=instance._region_name,
             interface=instance.interface)
 
     @mock.patch.object(plugin, 'OS_BAREMETAL_API_LATEST', new=True)
-    @mock.patch.object(client, 'Client', autospec=True)
-    def test_make_client_latest(self, mock_client: mock.Mock) -> None:
+    @mock.patch('openstack.connection.Connection', autospec=True)
+    def test_make_client_latest(self, mock_conn: mock.Mock) -> None:
         instance = fakes.FakeClientManager()
         instance.get_endpoint_for_service_type = mock.Mock(
             return_value='endpoint')
         instance._api_version = {'baremetal': plugin.LATEST_VERSION}
-        plugin.make_client(instance)
-        mock_client.assert_called_once_with(
-            # NOTE(dtantsur): "latest" is changed to an actual version before
-            # make_client is called.
-            os_ironic_api_version=plugin.LATEST_VERSION,
-            allow_api_version_downgrade=True,
-            session=instance.session,
-            region_name=instance._region_name,
-            endpoint_override='endpoint')
-        instance.get_endpoint_for_service_type.assert_called_once_with(
-            'baremetal', region_name=instance._region_name,
-            interface=instance.interface)
+        result = plugin.make_client(instance)
+        mock_conn.assert_called_once_with(session=instance.session)
+        proxy = mock_conn.return_value.baremetal
+        self.assertEqual(proxy.default_microversion, plugin.LATEST_VERSION)
+        self.assertIs(result, proxy)
 
     @mock.patch.object(plugin, 'OS_BAREMETAL_API_LATEST', new=False)
-    @mock.patch.object(client, 'Client', autospec=True)
-    def test_make_client_v1(self, mock_client: mock.Mock) -> None:
+    @mock.patch('openstack.connection.Connection', autospec=True)
+    def test_make_client_v1(self, mock_conn: mock.Mock) -> None:
         instance = fakes.FakeClientManager()
         instance.get_endpoint_for_service_type = mock.Mock(
             return_value='endpoint')
         instance._api_version = {'baremetal': '1'}
-        plugin.make_client(instance)
-        mock_client.assert_called_once_with(
-            os_ironic_api_version=plugin.LATEST_VERSION,
-            allow_api_version_downgrade=True,
-            session=instance.session,
-            region_name=instance._region_name,
-            endpoint_override='endpoint')
-        instance.get_endpoint_for_service_type.assert_called_once_with(
-            'baremetal', region_name=instance._region_name,
-            interface=instance.interface)
+        result = plugin.make_client(instance)
+        mock_conn.assert_called_once_with(session=instance.session)
+        proxy = mock_conn.return_value.baremetal
+        # '1' is treated as LATEST_VERSION
+        self.assertEqual(proxy.default_microversion, plugin.LATEST_VERSION)
+        self.assertIs(result, proxy)
 
 
 @mock.patch.object(plugin, 'OS_BAREMETAL_API_LATEST', new=True)
