@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    Adds two new commands for managing a node's BMC (management controller)
+    settings, available with ironic API microversion 1.116 or newer.
+
+    * ``openstack baremetal node bmc setting list <node_ident>``
+    * ``openstack baremetal node bmc setting show <node_ident> <setting_name>``
+
+    The first command returns a list of BMC settings for a given node, the
+    second returns a specified BMC setting from the given node. BMC settings
+    mirror BIOS settings but are restricted to system and owner
+    administrators.

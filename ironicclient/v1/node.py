@@ -1116,6 +1116,70 @@ class NodeManager(base.CreateManager[Node]):
                 global_request_id=global_request_id),
         )
 
+    def get_bmc_setting(
+        self,
+        node_ident: str,
+        name: str,
+        os_ironic_api_version: str | None = None,
+        global_request_id: str | None = None,
+    ) -> dict[str, str] | None:
+        """Get a BMC setting from a node.
+
+        :param node_ident: node UUID or name.
+        :param name: BMC setting name to get from the node.
+        :param os_ironic_api_version: String version (e.g. "1.116") to use for
+            the request.  If not specified, the client's default is used.
+        :param global_request_id: String containing global request ID header
+            value (in form "req-<UUID>") to use for the request.
+        """
+        path = "%s/bmc/%s" % (node_ident, name)
+        return cast(
+            dict[str, str] | None,
+            self._get_as_dict(
+                path, os_ironic_api_version=os_ironic_api_version,
+                global_request_id=global_request_id).get(name),
+        )
+
+    def list_bmc_settings(
+        self,
+        node_ident: str,
+        detail: bool = False,
+        fields: list[str] | None = None,
+        os_ironic_api_version: str | None = None,
+        global_request_id: str | None = None,
+    ) -> list[dict[str, str | int | bool | list[str] | None]]:
+        """List all BMC settings from a node.
+
+        :param node_ident: node UUID or name.
+        :param os_ironic_api_version: String version (e.g. "1.116") to use for
+            the request.  If not specified, the client's default is used.
+        :param global_request_id: String containing global request ID header
+            value (in form "req-<UUID>") to use for the request.
+        :param detail: Optional, boolean whether to return detailed information
+                       about bmc settings.
+        :param fields: Optional, a list with a specified set of fields
+                       of the resource to be returned. Can not be used
+                       when 'detail' is set.
+
+        """
+        if detail and fields:
+            raise exc.InvalidAttribute(_("Can't fetch a subset of fields "
+                                         "with 'detail' set"))
+
+        filters = utils.common_filters(detail=detail, fields=fields)
+        path = "%s/bmc" % node_ident
+
+        if filters:
+            path += '?' + '&'.join(filters)
+
+        return cast(
+            list[dict[str, str | int | bool | list[str] | None]],
+            self._list_primitives(
+                self._path(path), 'bmc',
+                os_ironic_api_version=os_ironic_api_version,
+                global_request_id=global_request_id),
+        )
+
     def _check_one_provision_state(
         self,
         node_ident: str,

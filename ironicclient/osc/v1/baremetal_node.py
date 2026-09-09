@@ -2496,6 +2496,105 @@ class BIOSSettingShowBaremetalNode(command.ShowOne):
         return self.dict2columns(setting)
 
 
+class ListBMCSettingBaremetalNode(command.Lister):
+    """List a node's BMC settings."""
+
+    log: logging.Logger = logging.getLogger(
+        __name__ + ".ListBMCSettingBaremetalNode")
+
+    def get_parser(self, prog_name: str) -> argparse.ArgumentParser:
+        parser: argparse.ArgumentParser
+        parser = super().get_parser(
+            prog_name)
+
+        parser.add_argument(
+            'node',
+            metavar='<node>',
+            help=_("Name or UUID of the node")
+        )
+        display_group = parser.add_mutually_exclusive_group(required=False)
+        display_group.add_argument(
+            '--long',
+            default=False,
+            help=_("Show detailed information about the BMC settings."),
+            action='store_true')
+        display_group.add_argument(
+            '--fields',
+            nargs='+',
+            dest='fields',
+            metavar='<field>',
+            action='append',
+            default=[],
+            choices=res_fields.BMC_DETAILED_RESOURCE.fields,
+            help=_("One or more node fields. Only these fields will be "
+                   "fetched from the server. Can not be used when '--long' "
+                   "is specified."))
+        return parser
+
+    def take_action(
+        self, parsed_args: argparse.Namespace,
+    ) -> tuple[Sequence[str], Iterable[Any]]:
+        self.log.debug("take_action(%s)", parsed_args)
+
+        fields = res_fields.BMC_RESOURCE.fields
+
+        params: dict[str, object] = {}
+        if parsed_args.long:
+            params['detail'] = parsed_args.long
+            fields = res_fields.BMC_DETAILED_RESOURCE.fields
+        elif parsed_args.fields:
+            params['detail'] = False
+            fields_iter = itertools.chain.from_iterable(
+                parsed_args.fields)
+            resource = res_fields.Resource(list(fields_iter))
+            fields = resource.fields
+            params['fields'] = fields
+
+        self.log.debug("params(%s)", params)
+
+        baremetal_client = self.app.client_manager.baremetal
+        settings = baremetal_client.node.list_bmc_settings(parsed_args.node,
+                                                           **params)
+
+        return (fields,
+                (oscutils.get_dict_properties(s, fields) for s in settings))
+
+
+class BMCSettingShowBaremetalNode(command.ShowOne):
+    """Show a specific BMC setting for a node."""
+
+    log: logging.Logger = logging.getLogger(
+        __name__ + ".BMCSettingShowBaremetalNode")
+
+    def get_parser(self, prog_name: str) -> argparse.ArgumentParser:
+        parser: argparse.ArgumentParser
+        parser = super().get_parser(
+            prog_name)
+
+        parser.add_argument(
+            'node',
+            metavar='<node>',
+            help=_("Name or UUID of the node")
+        )
+        parser.add_argument(
+            'setting_name',
+            metavar='<setting name>',
+            help=_("Setting name to show")
+        )
+        return parser
+
+    def take_action(
+        self, parsed_args: argparse.Namespace,
+    ) -> tuple[tuple[str, ...], tuple[Any, ...]]:
+        self.log.debug("take_action(%s)", parsed_args)
+
+        baremetal_client = self.app.client_manager.baremetal
+        setting = baremetal_client.node.get_bmc_setting(
+            parsed_args.node, parsed_args.setting_name)
+        setting.pop("links", None)
+        return self.dict2columns(setting)
+
+
 class NodeHistoryList(command.Lister):
     """Get history events for a baremetal node."""
 

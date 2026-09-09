@@ -4877,6 +4877,105 @@ class TestBIOSSettingShow(TestBaremetal):
         self.assertEqual(expected_data, tuple(data))
 
 
+class TestListBMCSetting(TestBaremetal):
+    def setUp(self) -> None:
+        super(TestListBMCSetting, self).setUp()
+
+        self.baremetal_mock.node.list_bmc_settings.return_value = (
+            baremetal_fakes.BMC_SETTINGS)
+
+        # Get the command object to test
+        self.cmd = baremetal_node.ListBMCSettingBaremetalNode(self.app, None)
+
+    def test_baremetal_list_bmc_setting(self) -> None:
+        arglist = ['node_uuid']
+        verifylist = [('node', 'node_uuid')]
+
+        parsed_args = self.check_parser(self.cmd, arglist, verifylist)
+
+        columns, data = self.cmd.take_action(parsed_args)
+
+        self.baremetal_mock.node.list_bmc_settings.assert_called_once_with(
+            'node_uuid')
+        expected_columns = ('name', 'value')
+        self.assertEqual(expected_columns, columns)
+
+        expected_data = ([(s['name'], s['value'])
+                         for s in baremetal_fakes.BMC_SETTINGS])
+        self.assertEqual(tuple(expected_data), tuple(data))
+
+    def test_baremetal_list_bmc_setting_long(self) -> None:
+        arglist = ['node_uuid', '--long']
+        verifylist = [('node', 'node_uuid'), ('long', True)]
+
+        parsed_args = self.check_parser(self.cmd, arglist, verifylist)
+
+        self.baremetal_mock.node.list_bmc_settings.return_value = (
+            baremetal_fakes.BMC_DETAILED_SETTINGS)
+
+        columns, data = self.cmd.take_action(parsed_args)
+
+        kwargs = {
+            'detail': True,
+        }
+
+        self.baremetal_mock.node.list_bmc_settings.assert_called_once_with(
+            'node_uuid', **kwargs)
+        expected_columns = ('name', 'value', 'attribute_type',
+                            'allowable_values', 'lower_bound',
+                            'min_length', 'max_length', 'read_only',
+                            'reset_required', 'unique', 'upper_bound')
+        self.assertEqual(expected_columns, columns)
+
+    def test_baremetal_list_bmc_setting_fields(self) -> None:
+
+        arglist = ['node_uuid', '--fields', 'name', 'attribute_type']
+        verifylist = [
+            ('fields', [['name', 'attribute_type']]),
+        ]
+        parsed_args = self.check_parser(self.cmd, arglist, verifylist)
+
+        self.baremetal_mock.node.list_bmc_settings.return_value = (
+            baremetal_fakes.BMC_DETAILED_SETTINGS)
+
+        columns, data = self.cmd.take_action(parsed_args)
+        self.assertNotIn('value', columns)
+        self.assertIn('name', columns)
+        self.assertIn('attribute_type', columns)
+
+        kwargs = {
+            'detail': False,
+            'fields': ('name', 'attribute_type'),
+        }
+
+        self.baremetal_mock.node.list_bmc_settings.assert_called_with(
+            'node_uuid', **kwargs)
+
+
+class TestBMCSettingShow(TestBaremetal):
+    def setUp(self) -> None:
+        super(TestBMCSettingShow, self).setUp()
+
+        self.baremetal_mock.node.get_bmc_setting.return_value = (
+            baremetal_fakes.BMC_SETTINGS[0])
+
+        # Get the command object to test
+        self.cmd = baremetal_node.BMCSettingShowBaremetalNode(self.app, None)
+
+    def test_baremetal_bmc_setting_show(self) -> None:
+        arglist = ['node_uuid', 'bmc_name_1']
+        verifylist = [('node', 'node_uuid'), ('setting_name', 'bmc_name_1')]
+
+        parsed_args = self.check_parser(self.cmd, arglist, verifylist)
+
+        columns, data = self.cmd.take_action(parsed_args)
+
+        self.baremetal_mock.node.get_bmc_setting.assert_called_once_with(
+            'node_uuid', 'bmc_name_1')
+        expected_data = ('bmc_name_1', 'bmc_value_1')
+        self.assertEqual(expected_data, tuple(data))
+
+
 class TestNodeHistoryEventList(TestBaremetal):
     def setUp(self) -> None:
         super(TestNodeHistoryEventList, self).setUp()

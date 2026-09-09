@@ -173,6 +173,19 @@ BIOS_DETAILED_SETTINGS = [{'name': 'SysName', 'value': 'my-system',
                            'links': [], 'attribute_type': 'Enumeration',
                            'allowable_values': ['Enabled', 'Disabled']}]
 
+BMC_SETTINGS = [{'name': 'bmc_name_1', 'value': 'bmc_value_1', 'links': []},
+                {'name': 'bmc_name_2', 'value': 'bmc_value_2', 'links': []}]
+
+BMC_DETAILED_SETTINGS = [{'name': 'SysName', 'value': 'my-system',
+                          'links': [], 'attribute_type': 'String',
+                          'min_length': '1', 'max_length': '16'},
+                         {'name': 'NumCores', 'value': '10',
+                          'links': [], 'attribute_type': 'Integer',
+                          'lower_bound': '10', 'upper_bound': '20'},
+                         {'name': 'ProcVirtualization', 'value': 'Enabled',
+                          'links': [], 'attribute_type': 'Enumeration',
+                          'allowable_values': ['Enabled', 'Disabled']}]
+
 baremetal_volume_connector_uuid = 'vvv-cccccc-vvvv'
 baremetal_volume_connector_type = 'iqn'
 baremetal_volume_connector_connector_id = 'iqn.2017-01.connector'

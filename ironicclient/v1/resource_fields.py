@@ -461,6 +461,27 @@ BIOS_DETAILED_RESOURCE = Resource(
      ],
 )
 
+BMC_RESOURCE = Resource(
+    ['name', 'value'],
+    override_labels={'name': 'BMC setting name',
+                     'value': 'BMC setting value'}
+)
+
+BMC_DETAILED_RESOURCE = Resource(
+    ['name',
+     'value',
+     'attribute_type',
+     'allowable_values',
+     'lower_bound',
+     'min_length',
+     'max_length',
+     'read_only',
+     'reset_required',
+     'unique',
+     'upper_bound'
+     ],
+)
+
 # Drivers
 DRIVER_DETAILED_RESOURCE = Resource(
     ['name',
